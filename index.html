@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расширенное Приложение Авторизации</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Базовые стили для тела и шрифта */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #2e2e2e 0%, #4a4a4a 100%); /* Градиентный фон */
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden; /* Предотвратить горизонтальную прокрутку */
+        }
+        /* Стили контейнера */
+        .container {
+            background-color: #3c3c3c;
+            border-radius: 0.75rem; /* Более округлые углы */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); /* Более выраженная тень */
+            animation: fadeIn 0.8s ease-out; /* Анимация появления */
+        }
+        /* Стили полей ввода */
+        .input-field {
+            background-color: #5a5a5a;
+            border: 1px solid #5a5a5a;
+            color: #ffffff;
+            transition: all 0.3s ease; /* Плавный переход для всех свойств */
+        }
+        .input-field:focus {
+            border-color: #6366f1; /* Голубая обводка при фокусе */
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5); /* Добавить тень для фокуса */
+            background-color: #4a4a4a; /* Темнее при фокусе */
+        }
+        /* Стили кнопок */
+        .btn {
+            background-color: #4a4a4a;
+            color: #ffffff;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden; /* Скрыть переполнение для эффекта пульсации */
+        }
+        .btn:hover {
+            background-color: #6366f1; /* Голубой при наведении */
+            transform: translateY(-2px); /* Слегка приподнять кнопку */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* Более выраженная тень при наведении */
+        }
+        .btn:active {
+            transform: translateY(0); /* Вернуть на место при нажатии */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        /* Эффект пульсации для кнопок */
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            opacity: 0;
+            transform: scale(1) translate(-50%, -50%);
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+        .btn:hover::after {
+            animation: pulse 0.6s ease-out forwards; /* Анимация пульсации при наведении */
+        }
+        .btn-red {
+            background-color: #ef4444; /* Более яркий красный */
+        }
+        .btn-red:hover {
+            background-color: #dc2626; /* Темнее красный при наведении */
+        }
+        .tab-button {
+            transition: background-color 0.3s ease, border-bottom 0.3s ease;
+            border-radius: 0.5rem 0.5rem 0 0; /* Закругленные верхние углы */
+        }
+        .tab-button.active {
+            background-color: #6366f1; /* Голубой для активной вкладки */
+            border-bottom: 2px solid #a78bfa; /* Фиолетовая обводка */
+            color: #ffffff;
+            font-weight: 600;
+        }
+        table {
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #5a5a5a;
+            padding: 0.75rem; /* Увеличить отступы */
+        }
+        th {
+            background-color: #5a5a5a;
+        }
+        tr:nth-child(even) {
+            background-color: #505050;
+        }
+        tr.selected-row {
+            background-color: #4f46e5 !important;
+            color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* Тень для выбранной строки */
+        }
+        tr.selected-row:hover {
+            background-color: #4338ca !important;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #3c3c3c;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #6a6a6a;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #88aaff;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0; /* Скрыть по умолчанию */
+            transition: opacity 0.3s ease; /* Плавное появление */
+        }
+        .modal-overlay.visible {
+            opacity: 1; /* Показать при активном */
+        }
+        .modal-content {
+            background-color: #3c3c3c;
+            padding: 2rem;
+            border-radius: 0.75rem; /* Более округлые углы */
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+            transform: translateY(-20px); /* Сдвинуть вверх для анимации */
+            opacity: 0; /* Скрыть по умолчанию */
+            transition: transform 0.3s ease, opacity 0.3s ease; /* Плавное появление */
+        }
+        .modal-overlay.visible .modal-content {
+            transform: translateY(0); /* Вернуть на место */
+            opacity: 1; /* Показать */
+        }
+        .close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.8rem; /* Чуть больше размер */
+            color: #ffffff;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .close-button:hover {
+            color: #ef4444; /* Красный при наведении */
+        }
+
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+            from { transform: scale(0) translate(-50%, -50%); opacity: 0.5; }
+            to { transform: scale(20) translate(-50%, -50%); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <div id="app" class="flex-grow flex items-center justify-center p-4">
+    </div>
+    <div id="message-modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="close-button" onclick="closeMessageModal()">&times;</button>
+            <h3 id="message-modal-title" class="text-xl font-bold mb-4 text-white"></h3>
+            <p id="message-modal-text" class="text-gray-200 mb-6"></p>
+            <div class="flex justify-end gap-3">
+                <button id="message-modal-confirm" class="btn px-4 py-2 rounded-md hidden" onclick="confirmModalAction()">Подтвердить</button>
+                <button id="message-modal-ok" class="btn px-4 py-2 rounded-md" onclick="closeMessageModal()">ОК</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let users = {};
+        let logs = [];
+        const rolesData = {
+            'user': ['view_profile', 'change_password', 'view_notifications', 'access_support', 'view_calendar',
+                     'view_documents', 'view_personal_settings', 'manage_leave_requests'],
+            'admin': ['manage_users', 'view_logs', 'view_stats', 'manage_roles', 'view_alerts', 'view_profile',
+                      'change_password', 'manage_announcements', 'view_user_activity', 'manage_system_config',
+                      'generate_reports']
+        };
+        let notificationsList = [
+            {'id': 1, 'message': 'Ваш пароль истекает через 7 дней!', 'read': false},
+            {'id': 2, 'message': 'Новое обновление политик конфиденциальности.', 'read': true},
+            {'id': 3, 'message': 'Система будет недоступна 25.06.2025 с 02:00 до 03:00 для планового обслуживания.',
+             'read': false}
+        ];
+        let systemAlerts = [
+            {'id': 1, 'timestamp': '2025-06-20 10:05:00', 'level': 'CRITICAL',
+             'message': 'Обнаружена подозрительная активность аккаунта "hacker_test" (5 неудачных попыток входа).'},
+            {'id': 2, 'timestamp': '2025-06-21 14:30:00', 'level': 'WARNING',
+             'message': 'Недостаточно места на диске сервера приложений.'},
+            {'id': 3, 'timestamp': '2025-06-22 08:00:00', 'level': 'INFO',
+             'message': 'Плановое обслуживание базы данных завершено успешно.'}
+        ];
+        let publicAnnouncements = [
+            {'id': 1, 'title': 'Добро пожаловать в компанию!', 'date': '2025-01-15',
+             'content': 'Мы рады приветствовать новых сотрудников!'},
+            {'id': 2, 'title': 'График праздников 2025', 'date': '2025-03-01',
+             'content': 'Ознакомьтесь с утвержденным графиком праздничных дней на 2025 год.'},
+            {'id': 3, 'title': 'Обновление корпоративного сайта', 'date': '2025-06-10',
+             'content': 'Наш корпоративный сайт был обновлен. В ближайшее время ожидается новый функционал.'}
+        ];
+        const eventsList = [
+            {'id': 1, 'date': '2025-07-01', 'time': '10:00', 'title': 'Ежемесячное совещание отдела',
+             'location': 'Конференц-зал А'},
+            {'id': 2, 'date': '2025-07-05', 'time': '14:30', 'title': 'Вебинар: Новые технологии', 'location': 'Онлайн'},
+            {'id': 3, 'date': '2025-07-10', 'time': '09:00', 'title': 'Корпоративный завтрак', 'location': 'Кухня'}
+        ];
+        const documentsList = [
+            {'id': 1, 'title': 'Политика использования ИТ-ресурсов', 'version': '1.2', 'date': '2024-11-01',
+             'link': 'policy_it_resources.pdf'},
+            {'id': 2, 'title': 'Руководство по безопасности данных', 'version': '2.0', 'date': '2025-02-10',
+             'link': 'data_security_guide.docx'},
+            {'id': 3, 'title': 'Шаблон отчета по продажам', 'version': '1.0', 'date': '2025-05-20',
+             'link': 'sales_report_template.xlsx'}
+        ];
+        const publicFaqData = [
+            {'id': 1, 'question': 'Как получить доступ к корпоративной сети?',
+             'answer': 'Доступ к корпоративной сети предоставляется всем новым сотрудникам автоматически после первой авторизации в системе.'},
+            {'id': 2, 'question': 'Куда обратиться по вопросам заработной платы?',
+             'answer': 'По вопросам заработной платы обращайтесь в отдел бухгалтерии или отправьте запрос по адресу payroll@company.com.'},
+            {'id': 3, 'question': 'Как сбросить забытый пароль?',
+             'answer': 'Нажмите кнопку "Забыли пароль?" на странице входа и следуйте инструкциям. Если проблема сохраняется, обратитесь в службу поддержки.'}
+        ];
+        const companyNewsData = [
+            {'id': 1, 'date': '2025-06-20', 'title': 'Новый рекорд продаж!',
+             'content': 'Наша команда достигла нового исторического максимума по продажам в этом квартале!'},
+            {'id': 2, 'date': '2025-06-15', 'title': 'Запуск нового проекта "Альфа"',
+             'content': 'Успешно запущен пилотный проект "Альфа". Ожидаем отличных результатов!'},
+            {'id': 3, 'date': '2025-06-01', 'title': 'День донора крови в офисе',
+             'content': 'Спасибо всем, кто принял участие в корпоративной акции "День донора крови".'}
+        ];
+        const jobOpeningsData = [
+            {'id': 1, 'title': 'Разработчик Python', 'department': 'ИТ-отдел', 'location': 'Москва', 'status': 'Открыта'},
+            {'id': 2, 'title': 'Менеджер по продажам', 'department': 'Отдел продаж', 'location': 'Санкт-Петербург',
+             'status': 'Открыта'},
+            {'id': 3, 'title': 'Бухгалтер', 'department': 'Бухгалтерия', 'location': 'Москва', 'status': 'Открыта'}
+        ];
+        let leaveRequestsData = [
+            {'id': 1, 'username': 'employee1', 'start_date': '2025-08-01', 'end_date': '2025-08-14', 'status': 'Одобрено',
+             'notes': 'Ежегодный отпуск'},
+            {'id': 2, 'username': 'employee1', 'start_date': '2025-09-01', 'end_date': '2025-09-03', 'status': 'В ожидании',
+             'notes': 'По семейным обстоятельствам'}
+        ];
+        let currentUser = null;
+        let currentRole = null;
+        let mfaEnabled = false;
+
+        // Хэширование пароля с использованием SHA-256
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hexHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hexHash;
+        }
+
+        // Хэширование пароля
+        async function hashPassword(password) {
+            return await sha256(password);
+        }
+
+        // Проверка пароля
+        async function checkPassword(password, hashedPassword) {
+            const hashedInput = await sha256(password);
+            return hashedInput === hashedPassword;
+        }
+
+        // Запись действий в журнал
+        function logAction(actionType, username, details) {
+            const timestamp = new Date().toLocaleString("ru-RU", {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+            logs.push({
+                'timestamp': timestamp,
+                'type': actionType,
+                'username': username,
+                'details': details
+            });
+            console.log(`LOG: [${timestamp}] Type: ${actionType}, User: ${username}, Details: ${details}`);
+            if (actionType === 'login_attempt' && details.includes("Неверный")) {
+                systemAlerts.push({
+                    'id': systemAlerts.length + 1,
+                    'timestamp': timestamp,
+                    'level': 'WARNING',
+                    'message': `Неудачная попытка входа для пользователя '${username}'. Детали: ${details}`
+                });
+            }
+        }
+
+        let modalActionCallback = null;
+
+        // Показать модальное окно с сообщением
+        function showMessageModal(title, message, isError = false, isConfirm = false, callback = null, isHtml = false) {
+            const modalOverlay = document.getElementById('message-modal-overlay');
+            const modalTitle = document.getElementById('message-modal-title');
+            const modalText = document.getElementById('message-modal-text');
+            const modalOkBtn = document.getElementById('message-modal-ok');
+            const modalConfirmBtn = document.getElementById('message-modal-confirm');
+
+            modalTitle.textContent = title;
+            if (isHtml) {
+                modalText.innerHTML = message;
+                modalText.classList.remove('mb-6');
+            } else {
+                modalText.textContent = message;
+                modalText.classList.add('mb-6');
+            }
+
+            modalTitle.className = 'text-xl font-bold mb-4';
+            if (isError) {
+                modalTitle.classList.add('text-red-500');
+            } else {
+                modalTitle.classList.add('text-white');
+            }
+
+            modalOkBtn.classList.remove('hidden');
+            modalConfirmBtn.classList.add('hidden');
+            modalActionCallback = null;
+
+            if (isConfirm) {
+                modalOkBtn.classList.add('hidden');
+                modalConfirmBtn.classList.remove('hidden');
+                modalActionCallback = callback;
+            }
+
+            modalOverlay.classList.remove('hidden');
+            modalOverlay.classList.add('visible'); // Добавить класс для анимации
+        }
+
+        // Закрыть модальное окно с сообщением
+        function closeMessageModal() {
+            const modalOverlay = document.getElementById('message-modal-overlay');
+            modalOverlay.classList.remove('visible'); // Удалить класс для анимации
+            setTimeout(() => {
+                modalOverlay.classList.add('hidden');
+                modalActionCallback = null;
+            }, 300); // Задержка для завершения анимации
+        }
+
+        // Выполнить действие модального окна
+        function confirmModalAction() {
+            if (modalActionCallback) {
+                modalActionCallback();
+            }
+            closeMessageModal();
+        }
+
+        // Инициализация тестовых данных
+        async function initializeTestData() {
+            if (Object.keys(users).length === 0) {
+                const adminPassword = "admin_password123!";
+                const userPassword = "user_password123!";
+
+                users['admin'] = {
+                    password_hash: await hashPassword(adminPassword),
+                    email: 'admin@company.com',
+                    role: 'admin',
+                    status: 'active',
+                    full_name: 'Иван Иванов'
+                };
+                logAction('admin_action', 'SYSTEM', `Добавлен администратор 'admin'`);
+
+                users['employee1'] = {
+                    password_hash: await hashPassword(userPassword),
+                    email: 'employee1@company.com',
+                    role: 'user',
+                    status: 'active',
+                    full_name: 'Петр Петров'
+                };
+                logAction('admin_action', 'SYSTEM', `Добавлен сотрудник 'employee1'`);
+
+                users['blocked_user'] = {
+                    password_hash: await hashPassword("blocked123!"),
+                    email: 'blocked@company.com',
+                    role: 'user',
+                    status: 'blocked',
+                    full_name: 'Анна Заблокированная'
+                };
+                logAction('admin_action', 'SYSTEM', `Добавлен заблокированный пользователь 'blocked_user'`);
+            }
+            console.log("Тестовые данные инициализированы.");
+            console.log("Доступные пользователи:", Object.keys(users));
+        }
+
+        // Очистка контейнера приложения
+        function clearAppContainer() {
+            const app = document.getElementById('app');
+            app.innerHTML = '';
+            app.className = 'flex-grow flex items-center justify-center p-4';
+        }
+
+        // Показать страницу
+        function showPage(pageName) {
+            clearAppContainer();
+            if (pageName === 'login') {
+                renderLoginPage();
+            } else if (pageName === 'user_dashboard') {
+                renderUserDashboard();
+            } else if (pageName === 'admin_dashboard') {
+                renderAdminDashboard();
+            } else if (pageName === 'public_dashboard') {
+                renderPublicDashboard();
+            }
+        }
+
+        // Отображение страницы входа
+        function renderLoginPage() {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="container p-10 rounded-lg w-full max-w-md text-center">
+                    <h1 class="text-3xl font-bold mb-8 text-white">Вход в систему</h1>
+                    <form id="login-form">
+                        <div class="mb-5 text-left">
+                            <label for="username" class="block text-sm font-medium text-gray-300 mb-2">Логин:</label>
+                            <input type="text" id="username" name="username" required
+                                class="input-field w-full px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="mb-6 text-left">
+                            <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Пароль:</label>
+                            <input type="password" id="password" name="password" required
+                                class="input-field w-full px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button type="submit"
+                            class="btn w-full py-3 rounded-md mb-3">Войти</button>
+                    </form>
+                    <a href="#" onclick="showMessageModal('Восстановление пароля', 'Функция восстановления пароля находится в разработке. Пожалуйста, обратитесь к администратору.')"
+                        class="text-blue-400 hover:underline text-sm block mb-2">Забыли пароль?</a>
+                    <button onclick="showPage('public_dashboard')"
+                        class="btn w-full py-3 rounded-md">Публичный доступ</button>
+                </div>
+            `;
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+        }
+
+        // Обработка входа
+        async function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showMessageModal("Ошибка входа", "Пожалуйста, введите логин и пароль.", true);
+                logAction('login_attempt', username, "Пустые поля логина/пароля");
+                return;
+            }
+
+            const userData = users[username];
+            if (userData) {
+                if (userData.status === 'blocked') {
+                    showMessageModal("Ошибка входа", "Ваша учетная запись заблокирована. Обратитесь к администратору.", true);
+                    logAction('login_attempt', username, "Учетная запись заблокирована");
+                    return;
+                }
+
+                const isPasswordCorrect = await checkPassword(password, userData.password_hash);
+                if (isPasswordCorrect) {
+                    currentUser = username;
+                    currentRole = userData.role;
+                    showMessageModal("Вход выполнен", `Добро пожаловать, ${userData.full_name}!`);
+                    logAction('login_success', username, "Успешный вход");
+
+                    if (mfaEnabled && currentRole === 'admin') {
+                        showMfaVerification();
+                    } else {
+                        if (currentRole === 'admin') {
+                            showPage('admin_dashboard');
+                        } else {
+                            showPage('user_dashboard');
+                        }
+                    }
+                } else {
+                    showMessageModal("Ошибка входа", "Неверный логин или пароль.", true);
+                    logAction('login_attempt', username, "Неверный пароль");
+                }
+            } else {
+                showMessageModal("Ошибка входа", "Неверный логин или пароль.", true);
+                logAction('login_attempt', username, "Пользователь не найден");
+            }
+        }
+
+        // Показать MFA верификацию
+        function showMfaVerification() {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="container p-10 rounded-lg w-full max-w-md text-center">
+                    <h1 class="text-3xl font-bold mb-8 text-white">Подтверждение MFA</h1>
+                    <form id="mfa-form">
+                        <div class="mb-5 text-left">
+                            <label for="mfa_code" class="block text-sm font-medium text-gray-300 mb-2">Введите код MFA (123456):</label>
+                            <input type="text" id="mfa_code" name="mfa_code" required
+                                class="input-field w-full px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button type="submit"
+                            class="btn w-full py-3 rounded-md mb-3">Подтвердить</button>
+                    </form>
+                    <button onclick="handleLogout()"
+                        class="btn btn-red w-full py-3 rounded-md">Отмена и выход</button>
+                </div>
+            `;
+            document.getElementById('mfa-form').addEventListener('submit', handleMfaVerification);
+        }
+
+        // Обработка MFA верификации
+        function handleMfaVerification(event) {
+            event.preventDefault();
+            const mfaCode = document.getElementById('mfa_code').value;
+
+            if (mfaCode === '123456') {
+                showMessageModal("MFA", "Код MFA подтвержден успешно!");
+                showPage('admin_dashboard');
+            } else {
+                showMessageModal("Ошибка MFA", "Неверный код MFA. Попробуйте снова.", true);
+                logAction('login_attempt', currentUser, "Неверный код MFA");
+            }
+        }
+
+        // Обработка выхода из системы
+        function handleLogout() {
+            if (currentUser) {
+                logAction('logout', currentUser, "Выход из системы");
+            }
+            currentUser = null;
+            currentRole = null;
+            showMessageModal("Выход", "Вы успешно вышли из системы.");
+            showPage('login');
+        }
+
+        // Отображение панели пользователя
+        function renderUserDashboard() {
+            const app = document.getElementById('app');
+            app.classList.remove('justify-center', 'items-center');
+            app.innerHTML = `
+                <div class="container p-8 rounded-lg w-full max-w-4xl mx-auto">
+                    <h1 class="text-3xl font-bold mb-6 text-white text-center">Добро пожаловать, ${users[currentUser].full_name}!</h1>
+                    <div class="flex flex-wrap border-b-2 border-gray-700 mb-6" id="user-tabs-buttons">
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 text-sm md:text-base" data-tab="profile">Профиль</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="password">Смена пароля</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="notifications">Уведомления</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="calendar">Календарь</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="documents">Документы</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="leave">Заявки на отпуск</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="settings">Настройки</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="support">Поддержка</button>
+                    </div>
+                    <div id="user-tabs-content" class="bg-gray-700 p-6 rounded-b-lg rounded-tr-lg">
+                        <div id="profile" class="tab-content"></div>
+                        <div id="password" class="tab-content hidden"></div>
+                        <div id="notifications" class="tab-content hidden"></div>
+                        <div id="calendar" class="tab-content hidden"></div>
+                        <div id="documents" class="tab-content hidden"></div>
+                        <div id="leave" class="tab-content hidden"></div>
+                        <div id="settings" class="tab-content hidden"></div>
+                        <div id="support" class="tab-content hidden"></div>
+                    </div>
+                    <button onclick="handleLogout()" class="btn btn-red mt-8 px-6 py-3 rounded-md mx-auto block">Выйти</button>
+                </div>
+            `;
+            setupTabs('user-tabs-buttons', 'user-tabs-content');
+            renderUserProfile();
+            renderUserPasswordChange();
+            renderUserNotifications();
+            renderUserCalendar();
+            renderUserDocuments();
+            renderUserLeaveRequests();
+            renderUserSettings();
+            renderUserSupport();
+            document.querySelector('#user-tabs-buttons button').click();
+        }
+
+        // Отображение профиля пользователя
+        function renderUserProfile() {
+            const content = document.getElementById('profile');
+            const user = users[currentUser];
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Ваши данные</h2>
+                <p class="text-lg mb-2"><strong class="text-gray-300">Логин:</strong> ${currentUser}</p>
+                <p class="text-lg mb-2"><strong class="text-gray-300">ФИО:</strong> ${user.full_name}</p>
+                <p class="text-lg mb-2"><strong class="text-gray-300">Email:</strong> ${user.email}</p>
+                <p class="text-lg mb-2"><strong class="text-gray-300">Роль:</strong> ${user.role}</p>
+                <p class="text-lg"><strong class="text-gray-300">Статус:</strong> ${user.status}</p>
+            `;
+        }
+
+        // Отображение смены пароля пользователя
+        function renderUserPasswordChange() {
+            const content = document.getElementById('password');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Смена пароля</h2>
+                <form id="change-password-form" class="bg-gray-600 p-6 rounded-lg">
+                    <div class="mb-4">
+                        <label for="current_password" class="block text-sm font-medium text-gray-300 mb-2">Текущий пароль:</label>
+                        <input type="password" id="current_password" name="current_password" required
+                            class="input-field w-full px-4 py-2 rounded-md">
+                    </div>
+                    <div class="mb-4">
+                        <label for="new_password" class="block text-sm font-medium text-gray-300 mb-2">Новый пароль:</label>
+                        <input type="password" id="new_password" name="new_password" required
+                            class="input-field w-full px-4 py-2 rounded-md">
+                    </div>
+                    <div class="mb-6">
+                        <label for="confirm_password" class="block text-sm font-medium text-gray-300 mb-2">Повторите новый пароль:</label>
+                        <input type="password" id="confirm_password" name="confirm_password" required
+                            class="input-field w-full px-4 py-2 rounded-md">
+                    </div>
+                    <button type="submit" class="btn px-6 py-2 rounded-md">Сменить пароль</button>
+                </form>
+            `;
+            document.getElementById('change-password-form').addEventListener('submit', handleChangePassword);
+        }
+
+        // Обработка смены пароля
+        async function handleChangePassword(event) {
+            event.preventDefault();
+            const currentPass = document.getElementById('current_password').value;
+            const newPass = document.getElementById('new_password').value;
+            const confirmPass = document.getElementById('confirm_password').value;
+
+            const userData = users[currentUser];
+
+            if (!await checkPassword(currentPass, userData.password_hash)) {
+                showMessageModal("Ошибка", "Неверный текущий пароль.", true);
+                return;
+            }
+
+            if (newPass !== confirmPass) {
+                showMessageModal("Ошибка", "Новый пароль и подтверждение не совпадают.", true);
+                return;
+            }
+
+            if (newPass.length < 8 ||
+                !/[A-Z]/.test(newPass) ||
+                !/[a-z]/.test(newPass) ||
+                !/[0-9]/.test(newPass) ||
+                !/[!@#$%^&*()_+\-=\[\]{}|;':",./<>?]/.test(newPass)) {
+                showMessageModal("Ошибка",
+                    "Пароль должен содержать не менее 8 символов, включая заглавные и строчные буквы, цифры и специальные символы.", true);
+                return;
+            }
+
+            users[currentUser].password_hash = await hashPassword(newPass);
+            logAction('user_action', currentUser, "Пароль успешно изменен");
+            showMessageModal("Успех", "Пароль успешно изменен!");
+            document.getElementById('change-password-form').reset();
+        }
+
+        // Отображение уведомлений пользователя
+        function renderUserNotifications() {
+            const content = document.getElementById('notifications');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Ваши уведомления</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-gray-300 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-600">
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3">Сообщение</th>
+                                <th class="p-3">Прочитано</th>
+                                <th class="p-3">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="notifications-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <button onclick="updateNotificationsList()" class="btn px-4 py-2 rounded-md">Обновить</button>
+                    <button onclick="markNotificationAsRead()" class="btn px-4 py-2 rounded-md">Отметить как прочитанное</button>
+                    <button onclick="deleteNotification()" class="btn btn-red px-4 py-2 rounded-md">Удалить уведомление</button>
+                </div>
+            `;
+            updateNotificationsList();
+        }
+
+        // Обновление списка уведомлений
+        function updateNotificationsList() {
+            const tbody = document.getElementById('notifications-table-body');
+            tbody.innerHTML = '';
+            notificationsList.forEach(notif => {
+                const row = tbody.insertRow();
+                row.className = 'hover:bg-gray-600 cursor-pointer';
+                row.setAttribute('data-id', notif.id);
+                row.insertCell().textContent = notif.id;
+                const messageCell = row.insertCell();
+                messageCell.textContent = notif.message;
+                messageCell.classList.add(notif.read ? 'text-gray-400' : 'font-semibold text-yellow-300');
+                row.insertCell().textContent = notif.read ? 'Да' : 'Нет';
+                row.addEventListener('click', () => {
+                    document.querySelectorAll('#notifications-table-body tr').forEach(r => r.classList.remove('selected-row'));
+                    row.classList.add('selected-row');
+                });
+            });
+        }
+
+        // Получить ID выбранного уведомления
+        function getSelectedNotificationId() {
+            const selectedRow = document.querySelector('#notifications-table-body tr.selected-row');
+            return selectedRow ? parseInt(selectedRow.getAttribute('data-id')) : null;
+        }
+
+        // Отметить уведомление как прочитанное
+        function markNotificationAsRead() {
+            const notifId = getSelectedNotificationId();
+            if (!notifId) {
+                showMessageModal("Ошибка", "Пожалуйста, выберите уведомление.", true);
+                return;
+            }
+
+            const notif = notificationsList.find(n => n.id === notifId);
+            if (notif) {
+                notif.read = true;
+                logAction('user_action', currentUser, `Уведомление '${notif.message}' отмечено как прочитанное.`);
+                showMessageModal("Успех", "Уведомление отмечено как прочитанное.");
+                updateNotificationsList();
+            } else {
+                showMessageModal("Ошибка", "Уведомление не найдено.", true);
+            }
+        }
+
+        // Удалить уведомление
+        function deleteNotification() {
+            const notifId = getSelectedNotificationId();
+            if (!notifId) {
+                showMessageModal("Ошибка", "Пожалуйста, выберите уведомление для удаления.", true);
+                return;
+            }
+
+            showMessageModal("Подтверждение", `Вы уверены, что хотите удалить уведомление с ID ${notifId}?`, false, true, () => {
+                const initialLen = notificationsList.length;
+                notificationsList = notificationsList.filter(n => n.id !== notifId);
+                if (notificationsList.length < initialLen) {
+                    logAction('user_action', currentUser, `Уведомление с ID ${notifId} удалено.`);
+                    showMessageModal("Успех", "Уведомление удалено.");
+                    updateNotificationsList();
+                } else {
+                    showMessageModal("Ошибка", "Уведомление не найдено.", true);
+                }
+            });
+        }
+
+        // Отображение календаря пользователя
+        function renderUserCalendar() {
+            const content = document.getElementById('calendar');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Предстоящие события</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-gray-300 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-600">
+                            <tr>
+                                <th class="p-3">Дата</th>
+                                <th class="p-3">Время</th>
+                                <th class="p-3">Название</th>
+                                <th class="p-3">Место</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${eventsList.map(event => `
+                                <tr>
+                                    <td class="p-3">${event.date}</td>
+                                    <td class="p-3">${event.time}</td>
+                                    <td class="p-3">${event.title}</td>
+                                    <td class="p-3">${event.location}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <button onclick="showMessageModal('Обновление', 'Список событий обновлен.')" class="btn mt-6 px-4 py-2 rounded-md">Обновить события</button>
+            `;
+        }
+
+        // Отображение документов пользователя
+        function renderUserDocuments() {
+            const content = document.getElementById('documents');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Внутренние документы</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-gray-300 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-600">
+                            <tr>
+                                <th class="p-3">Название</th>
+                                <th class="p-3">Версия</th>
+                                <th class="p-3">Дата</th>
+                                <th class="p-3">Ссылка</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${documentsList.map(doc => `
+                                <tr>
+                                    <td class="p-3">${doc.title}</td>
+                                    <td class="p-3">${doc.version}</td>
+                                    <td class="p-3">${doc.date}</td>
+                                    <td class="p-3"><a href="#" class="text-blue-400 hover:underline" onclick="showMessageModal('Скачивание', 'Функция скачивания пока не реализована.')">${doc.link}</a></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <button onclick="showMessageModal('Обновление', 'Список документов обновлен.')" class="btn mt-6 px-4 py-2 rounded-md">Обновить документы</button>
+                <button onclick="showMessageModal('Скачивание', 'Функция скачивания пока не реализована.')" class="btn ml-3 mt-6 px-4 py-2 rounded-md">Скачать (заглушка)</button>
+            `;
+        }
+
+        // Отображение заявок на отпуск пользователя
+        function renderUserLeaveRequests() {
+            const content = document.getElementById('leave');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Мои заявки на отпуск</h2>
+                <form id="submit-leave-form" class="bg-gray-600 p-6 rounded-lg mb-6">
+                    <h3 class="text-xl font-bold mb-4 text-white">Подать новую заявку</h3>
+                    <div class="mb-4">
+                        <label for="leave_start_date" class="block text-sm font-medium text-gray-300 mb-2">Начальная дата (ГГГГ-ММ-ДД):</label>
+                        <input type="date" id="leave_start_date" name="start_date" required
+                            class="input-field w-full px-4 py-2 rounded-md" value="${new Date().toISOString().slice(0, 10)}">
+                    </div>
+                    <div class="mb-4">
+                        <label for="leave_end_date" class="block text-sm font-medium text-gray-300 mb-2">Конечная дата (ГГГГ-ММ-ДД):</label>
+                        <input type="date" id="leave_end_date" name="end_date" required
+                            class="input-field w-full px-4 py-2 rounded-md" value="${new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().slice(0, 10)}">
+                    </div>
+                    <div class="mb-6">
+                        <label for="leave_notes" class="block text-sm font-medium text-gray-300 mb-2">Примечания:</label>
+                        <textarea id="leave_notes" name="notes" rows="3"
+                            class="input-field w-full px-4 py-2 rounded-md"></textarea>
+                    </div>
+                    <button type="submit" class="btn px-6 py-2 rounded-md">Подать заявку</button>
+                </form>
+                <h3 class="text-xl font-bold mb-4 text-white">Мои существующие заявки</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-gray-300 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-600">
+                            <tr>
+                                <th class="p-3">Начало</th>
+                                <th class="p-3">Конец</th>
+                                <th class="p-3">Статус</th>
+                                <th class="p-3">Примечания</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-leave-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                <button onclick="updateUserLeaveRequestsList()" class="btn mt-6 px-4 py-2 rounded-md">Обновить заявки</button>
+            `;
+            document.getElementById('submit-leave-form').addEventListener('submit', handleSubmitLeaveRequest);
+            updateUserLeaveRequestsList();
+        }
+
+        // Обновление списка заявок на отпуск пользователя
+        function updateUserLeaveRequestsList() {
+            const tbody = document.getElementById('user-leave-table-body');
+            tbody.innerHTML = '';
+            leaveRequestsData.filter(req => req.username === currentUser).forEach(req => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = req.start_date;
+                row.insertCell().textContent = req.end_date;
+                row.insertCell().textContent = req.status;
+                row.insertCell().textContent = req.notes;
+            });
+        }
+
+        // Обработка подачи заявки на отпуск
+        async function handleSubmitLeaveRequest(event) {
+            event.preventDefault();
+            const startDateStr = document.getElementById('leave_start_date').value;
+            const endDateStr = document.getElementById('leave_end_date').value;
+            const notes = document.getElementById('leave_notes').value;
+
+            const startDate = new Date(startDateStr);
+            const endDate = new Date(endDateStr);
+
+            if (isNaN(startDate) || isNaN(endDate) || startDateStr === "" || endDateStr === "") {
+                showMessageModal("Ошибка", "Неверный формат даты. Используйте ГГГГ-ММ-ДД.", true);
+                return;
+            }
+
+            if (startDate > endDate) {
+                showMessageModal("Ошибка", "Начальная дата не может быть позже конечной.", true);
+                return;
+            }
+
+            const newId = leaveRequestsData.length > 0 ? Math.max(...leaveRequestsData.map(r => r.id)) + 1 : 1;
+
+            leaveRequestsData.push({
+                'id': newId,
+                'username': currentUser,
+                'start_date': startDateStr,
+                'end_date': endDateStr,
+                'status': 'В ожидании',
+                'notes': notes
+            });
+
+            logAction('user_action', currentUser, `Подана заявка на отпуск с ${startDateStr} по ${endDateStr}`);
+            showMessageModal("Успех", "Заявка на отпуск успешно подана.");
+            document.getElementById('submit-leave-form').reset();
+            updateUserLeaveRequestsList();
+        }
+
+        // Отображение настроек пользователя
+        function renderUserSettings() {
+            const content = document.getElementById('settings');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Личные настройки</h2>
+                <p class="text-gray-300 mb-6">Здесь будут расположены настройки вашего профиля, уведомлений и т.д.</p>
+                <button onclick="showMessageModal('Настройки', 'Функционал сохранения личных настроек пока не реализован.')"
+                    class="btn px-6 py-2 rounded-md">Сохранить настройки (заглушка)</button>
+            `;
+        }
+
+        // Отображение поддержки пользователя
+        function renderUserSupport() {
+            const content = document.getElementById('support');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Служба поддержки</h2>
+                <p class="text-gray-300 mb-4">Если у вас возникли вопросы или проблемы, пожалуйста, свяжитесь с нами:</p>
+                <p class="text-lg mb-2"><strong class="text-gray-300">Email:</strong> support@company.com</p>
+                <p class="text-lg mb-2"><strong class="text-gray-300">Телефон:</strong> +123 456 7890</p>
+                <p class="text-lg"><strong class="text-gray-300">Часы работы:</strong> Пн-Пт, 9:00 - 18:00</p>
+            `;
+        }
+
+        // Отображение панели администратора
+        function renderAdminDashboard() {
+            const app = document.getElementById('app');
+            app.classList.remove('justify-center', 'items-center');
+            app.innerHTML = `
+                <div class="container p-8 rounded-lg w-full max-w-6xl mx-auto">
+                    <h1 class="text-3xl font-bold mb-6 text-white text-center">Панель администратора (${users[currentUser].full_name})</h1>
+                    <div class="flex flex-wrap border-b-2 border-gray-700 mb-6" id="admin-tabs-buttons">
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 text-sm md:text-base" data-tab="manage-users">Управление пользователями</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="user-activity">Активность пользователей</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="logs">Журнал действий</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="stats">Статистика</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="roles">Управление ролями</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="alerts">Системные оповещения</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="announcements">Управление объявлениями</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="system-config">Конфигурация системы</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="reports">Отчеты</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="settings">Настройки</button>
+                    </div>
+                    <div id="admin-tabs-content" class="bg-gray-700 p-6 rounded-b-lg rounded-tr-lg">
+                        <div id="manage-users" class="tab-content"></div>
+                        <div id="user-activity" class="tab-content hidden"></div>
+                        <div id="logs" class="tab-content hidden"></div>
+                        <div id="stats" class="tab-content hidden"></div>
+                        <div id="roles" class="tab-content hidden"></div>
+                        <div id="alerts" class="tab-content hidden"></div>
+                        <div id="announcements" class="tab-content hidden"></div>
+                        <div id="system-config" class="tab-content hidden"></div>
+                        <div id="reports" class="tab-content hidden"></div>
+                        <div id="settings" class="tab-content hidden"></div>
+                    </div>
+                    <button onclick="handleLogout()" class="btn btn-red mt-8 px-6 py-3 rounded-md mx-auto block">Выйти</button>
+                </div>
+            `;
+            setupTabs('admin-tabs-buttons', 'admin-tabs-content');
+            renderManageUsers();
+            renderUserActivity();
+            renderViewLogs();
+            renderAdminStats();
+            renderManageRoles();
+            renderSystemAlerts();
+            renderManageAnnouncements();
+            renderAdminSystemConfig();
+            renderAdminReports();
+            renderAdminSettings();
+            document.querySelector('#admin-tabs-buttons button').click();
+        }
+
+        // Отображение управления пользователями
+        function renderManageUsers() {
+            const content = document.getElementById('manage-users');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Управление пользователями</h2>
+                <div class="mb-6 flex flex-wrap gap-3">
+                    <button onclick="showAddUserModal()" class="btn px-4 py-2 rounded-md">Добавить пользователя</button>
+                    <button onclick="showEditUserModal()" class="btn px-4 py-2 rounded-md">Редактировать пользователя</button>
+                    <button onclick="toggleUserStatus()" class="btn px-4 py-2 rounded-md">Блокировать/Разблокировать</button>
+                    <button onclick="deleteUser()" class="btn btn-red px-4 py-2 rounded-md">Удалить пользователя</button>
+                    <button onclick="renderManageUsers();" class="btn px-4 py-2 rounded-md">Обновить список</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-gray-300 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-600">
+                            <tr>
+                                <th class="p-3">Логин</th>
+                                <th class="p-3">ФИО</th>
+                                <th class="p-3">Email</th>
+                                <th class="p-3">Роль</th>
+                                <th class="p-3">Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-list-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            updateUserListTable();
+        }
+
+        // Обновление таблицы списка пользователей
+        function updateUserListTable() {
+            const tbody = document.getElementById('user-list-table-body');
+            tbody.innerHTML = '';
+            for (const username in users) {
+                const userData = users[username];
+                const row = tbody.insertRow();
+                row.className = 'hover:bg-gray-600 cursor-pointer';
+                row.setAttribute('data-username', username);
+                row.insertCell().textContent = username;
+                row.insertCell().textContent = userData.full_name;
+                row.insertCell().textContent = userData.email;
+                row.insertCell().textContent = userData.role;
+                row.insertCell().textContent = userData.status;
+                row.addEventListener('click', () => {
+                    document.querySelectorAll('#user-list-table-body tr').forEach(r => r.classList.remove('selected-row'));
+                    row.classList.add('selected-row');
+                });
+            }
+        }
+
+        // Получить выбранное имя пользователя
+        function getSelectedUsername() {
+            const selectedRow = document.querySelector('#user-list-table-body tr.selected-row');
+            return selectedRow ? selectedRow.getAttribute('data-username') : null;
+        }
+
+        // Показать модальное окно добавления пользователя
+        function showAddUserModal() {
+            const modalContent = `
+                <h3 class="text-2xl font-bold mb-4 text-white">Добавить нового пользователя</h3>
+                <form id="add-user-form-modal">
+                    <div class="mb-4">
+                        <label for="new_username" class="block text-sm font-medium text-gray-300 mb-2">Логин:</label>
+                        <input type="text" id="new_username" name="username" required class="input-field w-full px-4 py-2 rounded-md">
+                    </div>
+                    <div class="mb-4">
+                        <label for="new_full_name" class="block text-sm font-medium text-gray-300 mb-2">ФИО:</label>
+                        <input type="text" id="new_full_name" name="full_name" required class="input-field w-full px-4 py-2 rounded-md">
+                    </div>
+                    <div class="mb-4">
+                        <label for="new_email" class="block text-sm font-medium text-gray-300 mb-2">Email:</label>
+                        <input type="email" id="new_email" name="email" required class="input-field w-full px-4 py-2 rounded-md">
+                    </div>
+                    <div class="mb-4">
+                        <label for="new_password" class="block text-sm font-medium text-gray-300 mb-2">Пароль:</label>
+                        <input type="password" id="new_password" name="password" required class="input-field w-full px-4 py-2 rounded-md">
+                    </div>
+                    <div class="mb-6">
+                        <label for="new_role" class="block text-sm font-medium text-gray-300 mb-2">Роль:</label>
+                        <select id="new_role" name="role" class="input-field w-full px-4 py-2 rounded-md">
+                            ${Object.keys(rolesData).map(role => `<option value="${role}">${role}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button type="submit" class="btn px-4 py-2 rounded-md">Сохранить</button>
+                        <button type="button" class="btn px-4 py-2 rounded-md" onclick="closeMessageModal()">Отмена</button>
+                    </div>
+                </form>
+            `;
+            showMessageModal("Добавить пользователя", modalContent, false, false, null, true);
+            document.getElementById('add-user-form-modal').addEventListener('submit', handleAddUser);
+        }
+
+        // Обработка добавления пользователя
+        async function handleAddUser(event) {
+            event.preventDefault();
+            const username = document.getElementById('new_username').value;
+            const fullName = document.getElementById('new_full_name').value;
+            const email = document.getElementById('new_email').value;
+            const password = document.getElementById('new_password').value;
+            const role = document.getElementById('new_role').value;
+
+            if (!username || !fullName || !email || !password || !role) {
+                showMessageModal("Ошибка", "Пожалуйста, заполните все поля.", true);
+                return;
+            }
+
+            if (users[username]) {
+                showMessageModal("Ошибка", "Пользователь с таким логином уже существует.", true);
+                return;
+            }
+
+            users[username] = {
+                password_hash: await hashPassword(password),
+                email: email,
+                role: role,
+                status: 'active',
+                full_name: fullName
+            };
+            logAction('admin_action', currentUser, `Добавлен пользователь: ${username}`);
+            showMessageModal("Успех", "Пользователь успешно добавлен.");
+            updateUserListTable();
+            renderAdminStats();
+            filterUserActivity();
+            closeMessageModal();
+        }
+
+        // Показать модальное окно редактирования пользователя
+        function showEditUserModal() {
+            const usernameToEdit = getSelectedUsername();
+            if (!usernameToEdit) {
+                showMessageModal("Ошибка", "Пожалуйста, выберите пользователя для редактирования.", true);
+                return;
+            }
+            const userData = users[usernameToEdit];
+            if (!userData) {
+                showMessageModal("Ошибка", "Пользователь не найден.", true);
+                return;
+            }
+
+            const modalContent = `
+                <h3 class="text-2xl font-bold mb-4 text-white">Редактировать пользователя: ${usernameToEdit}</h3>
+                <form id="edit-user-form-modal">
+                    <input type="hidden" id="edit_username_hidden" value="${usernameToEdit}">
+                    <div class="mb-4">
+                        <label for="edit_full_name" class="block text-sm font-medium text-gray-300 mb-2">ФИО:</label>
+                        <input type="text" id="edit_full_name" name="full_name" value="${userData.full_name}" required class="input-field w-full px-4 py-2 rounded-md">
+                    </div>
+                    <div class="mb-4">
+                        <label for="edit_email" class="block text-sm font-medium text-gray-300 mb-2">Email:</label>
+                        <input type="email" id="edit_email" name="email" value="${userData.email}" required class="input-field w-full px-4 py-2 rounded-md">
+                    </div>
+                    <div class="mb-6">
+                        <label for="edit_role" class="block text-sm font-medium text-gray-300 mb-2">Роль:</label>
+                        <select id="edit_role" name="role" class="input-field w-full px-4 py-2 rounded-md">
+                            ${Object.keys(rolesData).map(role => `<option value="${role}" ${userData.role === role ? 'selected' : ''}>${role}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button type="submit" class="btn px-4 py-2 rounded-md">Сохранить</button>
+                        <button type="button" class="btn px-4 py-2 rounded-md" onclick="closeMessageModal()">Отмена</button>
+                    </div>
+                </form>
+            `;
+            showMessageModal("Редактировать пользователя", modalContent, false, false, null, true);
+            document.getElementById('edit-user-form-modal').addEventListener('submit', handleEditUser);
+        }
+
+        // Обработка редактирования пользователя
+        async function handleEditUser(event) {
+            event.preventDefault();
+            const username = document.getElementById('edit_username_hidden').value;
+            const fullName = document.getElementById('edit_full_name').value;
+            const email = document.getElementById('edit_email').value;
+            const role = document.getElementById('edit_role').value;
+
+            if (!fullName || !email || !role) {
+                showMessageModal("Ошибка", "Пожалуйста, заполните все поля.", true);
+                return;
+            }
+
+            if (!users[username]) {
+                showMessageModal("Ошибка", "Редактируемый пользователь не найден.", true);
+                return;
+            }
+
+            users[username].full_name = fullName;
+            users[username].email = email;
+            users[username].role = role;
+            logAction('admin_action', currentUser, `Отредактирован пользователь: ${username}`);
+            showMessageModal("Успех", "Данные пользователя успешно обновлены.");
+            updateUserListTable();
+            renderAdminStats();
+            closeMessageModal();
+        }
+
+        // Переключение статуса пользователя
+        function toggleUserStatus() {
+            const username = getSelectedUsername();
+            if (!username) {
+                showMessageModal("Ошибка", "Пожалуйста, выберите пользователя для изменения статуса.", true);
+                return;
+            }
+            if (username === currentUser) {
+                showMessageModal("Ошибка", "Вы не можете заблокировать или разблокировать свою собственную учетную запись.", true);
+                return;
+            }
+
+            const userData = users[username];
+            if (!userData) {
+                showMessageModal("Ошибка", "Пользователь не найден.", true);
+                return;
+            }
+
+            const newStatus = userData.status === 'blocked' ? 'active' : 'blocked';
+
+            showMessageModal("Подтверждение", `Вы уверены, что хотите ${newStatus === 'active' ? 'разблокировать' : 'заблокировать'} пользователя ${username}?`, false, true, () => {
+                users[username].status = newStatus;
+                logAction('admin_action', currentUser, `Статус пользователя '${username}' изменен на '${newStatus}'`);
+                showMessageModal("Успех", `Статус пользователя '${username}' изменен на '${newStatus}'.`);
+                updateUserListTable();
+                renderAdminStats();
+            });
+        }
+
+        // Удаление пользователя
+        function deleteUser() {
+            const username = getSelectedUsername();
+            if (!username) {
+                showMessageModal("Ошибка", "Пожалуйста, выберите пользователя для удаления.", true);
+                return;
+            }
+            if (username === currentUser) {
+                showMessageModal("Ошибка", "Вы не можете удалить свою собственную учетную запись.", true);
+                return;
+            }
+
+            showMessageModal("Подтверждение удаления", `Вы уверены, что хотите удалить пользователя ${username}? Это действие необратимо.`, false, true, () => {
+                if (users[username]) {
+                    delete users[username];
+                    logAction('admin_action', currentUser, `Удален пользователь: ${username}`);
+                    showMessageModal("Успех", `Пользователь '${username}' успешно удален.`);
+                    updateUserListTable();
+                    renderAdminStats();
+                    if (document.getElementById('activity_user_select')) {
+                        const selectElement = document.getElementById('activity_user_select');
+                        selectElement.innerHTML = `<option value="">Все пользователи</option>` + Object.keys(users).map(uname => `<option value="${uname}">${uname}</option>`).join('');
+                        filterUserActivity();
+                    }
+                } else {
+                    showMessageModal("Ошибка", "Пользователь не найден.", true);
+                }
+            });
+        }
+
+        // Отображение активности пользователей
+        function renderUserActivity() {
+            const content = document.getElementById('user-activity');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Активность пользователей</h2>
+                <div class="mb-6 flex items-center gap-3">
+                    <label for="activity_user_select" class="block text-sm font-medium text-gray-300">Выберите пользователя:</label>
+                    <select id="activity_user_select" class="input-field px-3 py-2 rounded-md">
+                        <option value="">Все пользователи</option>
+                        ${Object.keys(users).map(username => `<option value="${username}">${username}</option>`).join('')}
+                    </select>
+                    <button onclick="filterUserActivity()" class="btn px-4 py-2 rounded-md">Обновить активность</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-gray-300 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-600">
+                            <tr>
+                                <th class="p-3">Время</th>
+                                <th class="p-3">Тип</th>
+                                <th class="p-3">Пользователь</th>
+                                <th class="p-3">Детали</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-activity-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            document.getElementById('activity_user_select').addEventListener('change', filterUserActivity);
+            filterUserActivity();
+        }
+
+        // Фильтрация активности пользователей
+        function filterUserActivity() {
+            const selectedUser = document.getElementById('activity_user_select').value;
+            const tbody = document.getElementById('user-activity-table-body');
+            tbody.innerHTML = '';
+            const filteredLogs = selectedUser ? logs.filter(log => log.username === selectedUser) : logs;
+            filteredLogs.slice().reverse().forEach(log => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = log.timestamp;
+                row.insertCell().textContent = log.type;
+                row.insertCell().textContent = log.username;
+                row.insertCell().textContent = log.details;
+            });
+        }
+
+        // Отображение журнала действий
+        function renderViewLogs() {
+            const content = document.getElementById('logs');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Журнал действий системы</h2>
+                <div class="mb-6">
+                    <button onclick="renderViewLogs()" class="btn px-4 py-2 rounded-md">Обновить журнал</button>
+                </div>
+                <div class="overflow-x-auto" style="max-height: 400px; overflow-y: auto;">
+                    <table class="w-full text-left text-gray-300 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-600 sticky top-0">
+                            <tr>
+                                <th class="p-3">Время</th>
+                                <th class="p-3">Тип</th>
+                                <th class="p-3">Пользователь</th>
+                                <th class="p-3">Детали</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${logs.slice().reverse().map(log => `
+                                <tr>
+                                    <td class="p-3">${log.timestamp}</td>
+                                    <td class="p-3">${log.type}</td>
+                                    <td class="p-3">${log.username}</td>
+                                    <td class="p-3">${log.details}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Отображение статистики администратора
+        function renderAdminStats() {
+            const content = document.getElementById('stats');
+            const totalUsers = Object.keys(users).length;
+            const activeUsers = Object.values(users).filter(u => u.status === 'active').length;
+            const blockedUsers = totalUsers - activeUsers;
+            const totalLogins = logs.filter(log => log.type === 'login_success').length;
+            const failedLogins = logs.filter(log => log.type === 'login_attempt' && log.details.includes("Неверный")).length;
+
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Статистика системы</h2>
+                <p class="text-lg mb-2"><strong class="text-gray-300">Всего пользователей:</strong> ${totalUsers}</p>
+                <p class="text-lg mb-2"><strong class="text-gray-300">Активных пользователей:</strong> ${activeUsers}</p>
+                <p class="text-lg mb-4"><strong class="text-gray-300">Заблокированных пользователей:</strong> ${blockedUsers}</p>
+                <p class="text-lg mb-2"><strong class="text-gray-300">Успешных входов:</strong> ${totalLogins}</p>
+                <p class="text-lg"><strong class="text-gray-300">Неудачных попыток входа:</strong> ${failedLogins}</p>
+                <button onclick="renderAdminStats()" class="btn mt-6 px-4 py-2 rounded-md">Обновить статистику</button>
+            `;
+        }
+
+        // Отображение управления ролями
+        function renderManageRoles() {
+            const content = document.getElementById('roles');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Управление ролями</h2>
+                <div class="mb-6 flex flex-wrap gap-3">
+                    <button onclick="showAddRoleModal()" class="btn px-4 py-2 rounded-md">Добавить роль</button>
+                    <button onclick="showEditRoleModal()" class="btn px-4 py-2 rounded-md">Редактировать роль</button>
+                    <button onclick="deleteRole()" class="btn btn-red px-4 py-2 rounded-md">Удалить роль</button>
+                    <button onclick="renderManageRoles()" class="btn px-4 py-2 rounded-md">Обновить список</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-gray-300 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-600">
+                            <tr>
+                                <th class="p-3">Название роли</th>
+                                <th class="p-3">Разрешения</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roles-list-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            updateRolesListTable();
+        }
+
+        // Обновление таблицы списка ролей
+        function updateRolesListTable() {
+            const tbody = document.getElementById('roles-list-table-body');
+            tbody.innerHTML = '';
+            for (const roleName in rolesData) {
+                const permissions = rolesData[roleName];
+                const row = tbody.insertRow();
+                row.className = 'hover:bg-gray-600 cursor-pointer';
+                row.setAttribute('data-role-name', roleName);
+                row.insertCell().textContent = roleName;
+                row.insertCell().textContent = permissions.join(', ');
+                row.addEventListener('click', () => {
+                    document.querySelectorAll('#roles-list-table-body tr').forEach(r => r.classList.remove('selected-row'));
+                    row.classList.add('selected-row');
+                });
+            }
+        }
+
+        // Получить выбранное имя роли
+        function getSelectedRoleName() {
+            const selectedRow = document.querySelector('#roles-list-table-body tr.selected-row');
+            return selectedRow ? selectedRow.getAttribute('data-role-name') : null;
+        }
+
+        // Показать модальное окно добавления роли
+        function showAddRoleModal() {
+            const modalContent = `
+                <h3 class="text-2xl font-bold mb-4 text-white">Добавить новую роль</h3>
+                <form id="add-role-form-modal">
+                    <div class="mb-4">
+                        <label for="new_role_name" class="block text-sm font-medium text-gray-300 mb-2">Название роли:</label>
+                        <input type="text" id="new_role_name" name="role_name" required class="input-field w-full px-4 py-2 rounded-md">
+                    </div>
+                    <div class="mb-6">
+                        <label for="new_permissions" class="block text-sm font-medium text-gray-300 mb-2">Разрешения (через запятую):</label>
+                        <textarea id="new_permissions" name="permissions" rows="3" class="input-field w-full px-4 py-2 rounded-md"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button type="submit" class="btn px-4 py-2 rounded-md">Сохранить</button>
+                        <button type="button" class="btn px-4 py-2 rounded-md" onclick="closeMessageModal()">Отмена</button>
+                    </div>
+                </form>
+            `;
+            showMessageModal("Добавить роль", modalContent, false, false, null, true);
+            document.getElementById('add-role-form-modal').addEventListener('submit', handleAddRole);
+        }
+
+        // Обработка добавления роли
+        async function handleAddRole(event) {
+            event.preventDefault();
+            const roleName = document.getElementById('new_role_name').value.trim();
+            const permissions = document.getElementById('new_permissions').value.split(',').map(p => p.trim()).filter(p => p);
+
+            if (!roleName) {
+                showMessageModal("Ошибка", "Название роли не может быть пустым.", true);
+                return;
+            }
+            if (rolesData[roleName]) {
+                showMessageModal("Ошибка", "Роль с таким названием уже существует.", true);
+                return;
+            }
+
+            rolesData[roleName] = permissions;
+            logAction('admin_action', currentUser, `Добавлена роль: ${roleName} с разрешениями: ${permissions.join(', ')}`);
+            showMessageModal("Успех", "Роль успешно добавлена.");
+            updateRolesListTable();
+            renderManageUsers();
+            closeMessageModal();
+        }
+
+        // Показать модальное окно редактирования роли
+        function showEditRoleModal() {
+            const roleNameToEdit = getSelectedRoleName();
+            if (!roleNameToEdit) {
+                showMessageModal("Ошибка", "Пожалуйста, выберите роль для редактирования.", true);
+                return;
+            }
+            const permissions = rolesData[roleNameToEdit];
+            if (!permissions) {
+                showMessageModal("Ошибка", "Роль не найдена.", true);
+                return;
+            }
+
+            const modalContent = `
+                <h3 class="text-2xl font-bold mb-4 text-white">Редактировать роль: ${roleNameToEdit}</h3>
+                <form id="edit-role-form-modal">
+                    <input type="hidden" id="edit_role_name_hidden" value="${roleNameToEdit}">
+                    <div class="mb-4">
+                        <label for="edit_permissions" class="block text-sm font-medium text-gray-300 mb-2">Разрешения (через запятую):</label>
+                        <textarea id="edit_permissions" name="permissions" rows="3" class="input-field w-full px-4 py-2 rounded-md">${permissions.join(', ')}</textarea>
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button type="submit" class="btn px-4 py-2 rounded-md">Сохранить</button>
+                        <button type="button" class="btn px-4 py-2 rounded-md" onclick="closeMessageModal()">Отмена</button>
+                    </div>
+                </form>
+            `;
+            showMessageModal("Редактировать роль", modalContent, false, false, null, true);
+            document.getElementById('edit-role-form-modal').addEventListener('submit', handleEditRole);
+        }
+
+        // Обработка редактирования роли
+        async function handleEditRole(event) {
+            event.preventDefault();
+            const roleName = document.getElementById('edit_role_name_hidden').value;
+            const permissions = document.getElementById('edit_permissions').value.split(',').map(p => p.trim()).filter(p => p);
+
+            if (!rolesData[roleName]) {
+                showMessageModal("Ошибка", "Редактируемая роль не найдена.", true);
+                return;
+            }
+
+            rolesData[roleName] = permissions;
+            logAction('admin_action', currentUser, `Отредактирована роль: ${roleName}, новые разрешения: ${permissions.join(', ')}`);
+            showMessageModal("Успех", "Роль успешно обновлена.");
+            updateRolesListTable();
+            renderManageUsers();
+            closeMessageModal();
+        }
+
+        // Удаление роли
+        function deleteRole() {
+            const roleToDelete = getSelectedRoleName();
+            if (!roleToDelete) {
+                showMessageModal("Ошибка", "Пожалуйста, выберите роль для удаления.", true);
+                return;
+            }
+            if (['user', 'admin'].includes(roleToDelete)) {
+                showMessageModal("Ошибка", `Системную роль '${roleToDelete}' удалить нельзя.`, true);
+                return;
+            }
+
+            const usersWithRole = Object.keys(users).filter(uname => users[uname].role === roleToDelete);
+            if (usersWithRole.length > 0) {
+                showMessageModal("Ошибка",
+                    `Невозможно удалить роль '${roleToDelete}', так как к ней привязаны пользователи: ${usersWithRole.join(', ')}.`, true);
+                return;
+            }
+
+            showMessageModal("Подтверждение удаления", `Вы уверены, что хотите удалить роль '${roleToDelete}'? Это действие необратимо.`, false, true, () => {
+                if (rolesData[roleToDelete]) {
+                    delete rolesData[roleToDelete];
+                    logAction('admin_action', currentUser, `Удалена роль: ${roleToDelete}`);
+                    showMessageModal("Успех", `Роль '${roleToDelete}' успешно удалена.`);
+                    updateRolesListTable();
+                    renderManageUsers();
+                } else {
+                    showMessageModal("Ошибка", "Роль не найдена.", true);
+                }
+            });
+        }
+
+        // Отображение системных оповещений
+        function renderSystemAlerts() {
+            const content = document.getElementById('alerts');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Системные оповещения</h2>
+                <div class="mb-6">
+                    <button onclick="renderSystemAlerts()" class="btn px-4 py-2 rounded-md">Обновить оповещения</button>
+                </div>
+                <div class="overflow-x-auto" style="max-height: 400px; overflow-y: auto;">
+                    <table class="w-full text-left text-gray-300 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-600 sticky top-0">
+                            <tr>
+                                <th class="p-3">Время</th>
+                                <th class="p-3">Уровень</th>
+                                <th class="p-3">Сообщение</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${systemAlerts.slice().reverse().map(alert => `
+                                <tr>
+                                    <td class="p-3">${alert.timestamp}</td>
+                                    <td class="p-3">${alert.level}</td>
+                                    <td class="p-3">${alert.message}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Отображение управления объявлениями
+        function renderManageAnnouncements() {
+            const content = document.getElementById('announcements');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Управление публичными объявлениями</h2>
+                <div class="mb-6 flex flex-wrap gap-3">
+                    <button onclick="showAddAnnouncementModal()" class="btn px-4 py-2 rounded-md">Добавить объявление</button>
+                    <button onclick="showEditAnnouncementModal()" class="btn px-4 py-2 rounded-md">Редактировать объявление</button>
+                    <button onclick="deleteAnnouncement()" class="btn btn-red px-4 py-2 rounded-md">Удалить объявление</button>
+                    <button onclick="renderManageAnnouncements()" class="btn px-4 py-2 rounded-md">Обновить список</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-gray-300 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-600">
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3">Заголовок</th>
+                                <th class="p-3">Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody id="announcements-list-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            updateAnnouncementsListTable();
+        }
+
+        // Обновление таблицы списка объявлений
+        function updateAnnouncementsListTable() {
+            const tbody = document.getElementById('announcements-list-table-body');
+            tbody.innerHTML = '';
+            publicAnnouncements.forEach(ann => {
+                const row = tbody.insertRow();
+                row.className = 'hover:bg-gray-600 cursor-pointer';
+                row.setAttribute('data-id', ann.id);
+                row.insertCell().textContent = ann.id;
+                row.insertCell().textContent = ann.title;
+                row.insertCell().textContent = ann.date;
+                row.addEventListener('click', () => {
+                    document.querySelectorAll('#announcements-list-table-body tr').forEach(r => r.classList.remove('selected-row'));
+                    row.classList.add('selected-row');
+                });
+            });
+        }
+
+        // Получить ID выбранного объявления
+        function getSelectedAnnouncementId() {
+            const selectedRow = document.querySelector('#announcements-list-table-body tr.selected-row');
+            return selectedRow ? parseInt(selectedRow.getAttribute('data-id')) : null;
+        }
+
+        // Показать модальное окно добавления объявления
+        function showAddAnnouncementModal() {
+            const modalContent = `
+                <h3 class="text-2xl font-bold mb-4 text-white">Добавить новое объявление</h3>
+                <form id="add-announcement-form-modal">
+                    <div class="mb-4">
+                        <label for="new_ann_title" class="block text-sm font-medium text-gray-300 mb-2">Заголовок:</label>
+                        <input type="text" id="new_ann_title" name="title" required class="input-field w-full px-4 py-2 rounded-md">
+                    </div>
+                    <div class="mb-4">
+                        <label for="new_ann_date" class="block text-sm font-medium text-gray-300 mb-2">Дата (ГГГГ-ММ-ДД):</label>
+                        <input type="date" id="new_ann_date" name="date" required class="input-field w-full px-4 py-2 rounded-md" value="${new Date().toISOString().slice(0, 10)}">
+                    </div>
+                    <div class="mb-6">
+                        <label for="new_ann_content" class="block text-sm font-medium text-gray-300 mb-2">Содержание:</label>
+                        <textarea id="new_ann_content" name="content" rows="5" class="input-field w-full px-4 py-2 rounded-md"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button type="submit" class="btn px-4 py-2 rounded-md">Сохранить</button>
+                        <button type="button" class="btn px-4 py-2 rounded-md" onclick="closeMessageModal()">Отмена</button>
+                    </div>
+                </form>
+            `;
+            showMessageModal("Добавить объявление", modalContent, false, false, null, true);
+            document.getElementById('add-announcement-form-modal').addEventListener('submit', handleAddAnnouncement);
+        }
+
+        // Обработка добавления объявления
+        async function handleAddAnnouncement(event) {
+            event.preventDefault();
+            const title = document.getElementById('new_ann_title').value.trim();
+            const date = document.getElementById('new_ann_date').value;
+            const content = document.getElementById('new_ann_content').value.trim();
+
+            if (!title || !date || !content) {
+                showMessageModal("Ошибка", "Пожалуйста, заполните все поля объявления.", true);
+                return;
+            }
+            if (isNaN(new Date(date))) {
+                showMessageModal("Ошибка", "Неверный формат даты. Используйте ГГГГ-ММ-ДД.", true);
+                return;
+            }
+
+            const newId = publicAnnouncements.length > 0 ? Math.max(...publicAnnouncements.map(a => a.id)) + 1 : 1;
+
+            publicAnnouncements.push({'id': newId, 'title': title, 'date': date, 'content': content});
+            logAction('admin_action', currentUser, `Добавлено публичное объявление: '${title}'`);
+            showMessageModal("Успех", "Объявление успешно добавлено.");
+            updateAnnouncementsListTable();
+            closeMessageModal();
+        }
+
+        // Показать модальное окно редактирования объявления
+        function showEditAnnouncementModal() {
+            const annId = getSelectedAnnouncementId();
+            if (!annId) {
+                showMessageModal("Ошибка", "Пожалуйста, выберите объявление для редактирования.", true);
+                return;
+            }
+            const announcement = publicAnnouncements.find(a => a.id === annId);
+            if (!announcement) {
+                showMessageModal("Ошибка", "Объявление не найдено.", true);
+                return;
+            }
+
+            const modalContent = `
+                <h3 class="text-2xl font-bold mb-4 text-white">Редактировать объявление: ${announcement.title}</h3>
+                <form id="edit-announcement-form-modal">
+                    <input type="hidden" id="edit_ann_id_hidden" value="${announcement.id}">
+                    <div class="mb-4">
+                        <label for="edit_ann_title" class="block text-sm font-medium text-gray-300 mb-2">Заголовок:</label>
+                        <input type="text" id="edit_ann_title" name="title" value="${announcement.title}" required class="input-field w-full px-4 py-2 rounded-md">
+                    </div>
+                    <div class="mb-4">
+                        <label for="edit_ann_date" class="block text-sm font-medium text-gray-300 mb-2">Дата (ГГГГ-ММ-ДД):</label>
+                        <input type="date" id="edit_ann_date" name="date" value="${announcement.date}" required class="input-field w-full px-4 py-2 rounded-md">
+                    </div>
+                    <div class="mb-6">
+                        <label for="edit_ann_content" class="block text-sm font-medium text-gray-300 mb-2">Содержание:</label>
+                        <textarea id="edit_ann_content" name="content" rows="5" class="input-field w-full px-4 py-2 rounded-md">${announcement.content}</textarea>
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button type="submit" class="btn px-4 py-2 rounded-md">Сохранить</button>
+                        <button type="button" class="btn px-4 py-2 rounded-md" onclick="closeMessageModal()">Отмена</button>
+                    </div>
+                </form>
+            `;
+            showMessageModal("Редактировать объявление", modalContent, false, false, null, true);
+            document.getElementById('edit-announcement-form-modal').addEventListener('submit', handleEditAnnouncement);
+        }
+
+        // Обработка редактирования объявления
+        async function handleEditAnnouncement(event) {
+            event.preventDefault();
+            const id = parseInt(document.getElementById('edit_ann_id_hidden').value);
+            const title = document.getElementById('edit_ann_title').value.trim();
+            const date = document.getElementById('edit_ann_date').value;
+            const content = document.getElementById('edit_ann_content').value.trim();
+
+            if (!title || !date || !content) {
+                showMessageModal("Ошибка", "Пожалуйста, заполните все поля объявления.", true);
+                return;
+            }
+            if (isNaN(new Date(date))) {
+                showMessageModal("Ошибка", "Неверный формат даты. Используйте ГГГГ-ММ-ДД.", true);
+                return;
+            }
+
+            const index = publicAnnouncements.findIndex(a => a.id === id);
+            if (index !== -1) {
+                publicAnnouncements[index] = {'id': id, 'title': title, 'date': date, 'content': content};
+                logAction('admin_action', currentUser, `Отредактировано публичное объявление: '${title}' (ID: ${id})`);
+                showMessageModal("Успех", "Объявление успешно обновлено.");
+                updateAnnouncementsListTable();
+                closeMessageModal();
+            } else {
+                showMessageModal("Ошибка", "Объявление не найдено.", true);
+                return;
+            }
+        }
+
+        // Удаление объявления
+        function deleteAnnouncement() {
+            const annId = getSelectedAnnouncementId();
+            if (!annId) {
+                showMessageModal("Ошибка", "Пожалуйста, выберите объявление для удаления.", true);
+                return;
+            }
+
+            showMessageModal("Подтверждение удаления", `Вы уверены, что хотите удалить объявление с ID ${annId}?`, false, true, () => {
+                const initialLen = publicAnnouncements.length;
+                publicAnnouncements = publicAnnouncements.filter(a => a.id !== annId);
+                if (publicAnnouncements.length < initialLen) {
+                    logAction('admin_action', currentUser, `Удалено публичное объявление с ID ${annId}.`);
+                    showMessageModal("Успех", "Объявление удалено.");
+                    updateAnnouncementsListTable();
+                } else {
+                    showMessageModal("Ошибка", "Объявление не найдено.", true);
+                }
+            });
+        }
+
+        // Отображение конфигурации системы администратора
+        function renderAdminSystemConfig() {
+            const content = document.getElementById('system-config');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Продвинутая конфигурация системы</h2>
+                <p class="text-gray-300 mb-6">Здесь можно будет настроить политики паролей, время жизни сессий, интеграции и т.д.</p>
+                <div class="mb-4">
+                    <label for="min_password_length" class="block text-sm font-medium text-gray-300 mb-2">Минимальная длина пароля:</label>
+                    <input type="number" id="min_password_length" value="8" class="input-field w-32 px-4 py-2 rounded-md">
+                </div>
+                <button onclick="showMessageModal('Конфигурация', 'Функционал сохранения конфигурации пока не реализован.')"
+                    class="btn px-6 py-2 rounded-md">Сохранить конфигурацию (заглушка)</button>
+            `;
+        }
+
+        // Отображение отчетов администратора
+        function renderAdminReports() {
+            const content = document.getElementById('reports');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Генерация отчетов</h2>
+                <p class="text-gray-300 mb-6">Выберите тип отчета для генерации:</p>
+                <div class="flex flex-col space-y-3">
+                    <button onclick="showMessageModal('Отчет', 'Отчет по входам сгенерирован (имитация).')"
+                        class="btn px-6 py-2 rounded-md">Отчет по входам в систему</button>
+                    <button onclick="showMessageModal('Отчет', 'Отчет по ролям сгенерирован (имитация).')"
+                        class="btn px-6 py-2 rounded-md">Отчет по ролям пользователей</button>
+                    <button onclick="showMessageModal('Отчет', 'Отчет по заблокированным аккаунтам сгенерирован (имитация).')"
+                        class="btn px-6 py-2 rounded-md">Отчет по заблокированным аккаунтам</button>
+                    <button onclick="showMessageModal('Отчет', 'Отчет по заявкам на отпуск сгенерирован (имитация).')"
+                        class="btn px-6 py-2 rounded-md">Отчет по заявкам на отпуск</button>
+                </div>
+            `;
+        }
+
+        // Отображение настроек администратора
+        function renderAdminSettings() {
+            const content = document.getElementById('settings');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Настройки системы</h2>
+                <div class="mb-4">
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="mfa_toggle" class="sr-only peer" ${mfaEnabled ? 'checked' : ''}>
+                        <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        <span class="ms-3 text-lg font-medium text-gray-300">Включить многофакторную аутентификацию (MFA)</span>
+                    </label>
+                </div>
+                <p class="text-gray-300 mb-6">Здесь будут расположены другие настройки системы (например, правила паролей).</p>
+                <button onclick="showMessageModal('Настройки', 'Функционал сохранения настроек пока не реализован.')"
+                    class="btn px-6 py-2 rounded-md">Сохранить настройки (заглушка)</button>
+            `;
+            document.getElementById('mfa_toggle').addEventListener('change', (event) => {
+                mfaEnabled = event.target.checked;
+                const status = mfaEnabled ? "включена" : "отключена";
+                logAction('admin_action', currentUser, `Многофакторная аутентификация ${status}.`);
+                showMessageModal("Настройка MFA", `Многофакторная аутентификация теперь ${status}.`);
+            });
+        }
+
+        // Отображение публичной панели
+        function renderPublicDashboard() {
+            const app = document.getElementById('app');
+            app.classList.remove('justify-center', 'items-center');
+            app.innerHTML = `
+                <div class="container p-8 rounded-lg w-full max-w-4xl mx-auto">
+                    <h1 class="text-3xl font-bold mb-6 text-white text-center">Публичный доступ</h1>
+                    <div class="flex flex-wrap border-b-2 border-gray-700 mb-6" id="public-tabs-buttons">
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 text-sm md:text-base" data-tab="public-announcements">Объявления</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="public-news">Новости</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="public-careers">Вакансии</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="public-faq">FAQ</button>
+                        <button class="tab-button bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 ml-1 text-sm md:text-base" data-tab="public-contacts">Контакты</button>
+                    </div>
+                    <div id="public-tabs-content" class="bg-gray-700 p-6 rounded-b-lg rounded-tr-lg">
+                        <div id="public-announcements" class="tab-content"></div>
+                        <div id="public-news" class="tab-content hidden"></div>
+                        <div id="public-careers" class="tab-content hidden"></div>
+                        <div id="public-faq" class="tab-content hidden"></div>
+                        <div id="public-contacts" class="tab-content hidden"></div>
+                    </div>
+                    <button onclick="showPage('login')" class="btn mt-8 px-6 py-3 rounded-md mx-auto block">Вернуться к входу</button>
+                </div>
+            `;
+            setupTabs('public-tabs-buttons', 'public-tabs-content');
+            renderPublicAnnouncements();
+            renderPublicNews();
+            renderPublicCareers();
+            renderPublicFaq();
+            renderPublicContacts();
+            document.querySelector('#public-tabs-buttons button').click();
+        }
+
+        // Отображение публичных объявлений
+        function renderPublicAnnouncements() {
+            const content = document.getElementById('public-announcements');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Общедоступные объявления</h2>
+                <div class="overflow-x-auto" style="max-height: 400px; overflow-y: auto;">
+                    <table class="w-full text-left text-gray-300 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-600">
+                            <tr>
+                                <th class="p-3">Дата</th>
+                                <th class="p-3">Заголовок</th>
+                                <th class="p-3">Содержание</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${publicAnnouncements.map(ann => `
+                                <tr>
+                                    <td class="p-3">${ann.date}</td>
+                                    <td class="p-3">${ann.title}</td>
+                                    <td class="p-3">${ann.content}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Отображение публичных новостей
+        function renderPublicNews() {
+            const content = document.getElementById('public-news');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Новости компании</h2>
+                <div class="overflow-x-auto" style="max-height: 400px; overflow-y: auto;">
+                    <table class="w-full text-left text-gray-300 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-600">
+                            <tr>
+                                <th class="p-3">Дата</th>
+                                <th class="p-3">Заголовок</th>
+                                <th class="p-3">Содержание</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${companyNewsData.map(news => `
+                                <tr>
+                                    <td class="p-3">${news.date}</td>
+                                    <td class="p-3">${news.title}</td>
+                                    <td class="p-3">${news.content}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Отображение публичных карьерных возможностей
+        function renderPublicCareers() {
+            const content = document.getElementById('public-careers');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Открытые вакансии</h2>
+                <div class="overflow-x-auto" style="max-height: 400px; overflow-y: auto;">
+                    <table class="w-full text-left text-gray-300 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-600">
+                            <tr>
+                                <th class="p-3">Название вакансии</th>
+                                <th class="p-3">Отдел</th>
+                                <th class="p-3">Местоположение</th>
+                                <th class="p-3">Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${jobOpeningsData.map(job => `
+                                <tr>
+                                    <td class="p-3">${job.title}</td>
+                                    <td class="p-3">${job.department}</td>
+                                    <td class="p-3">${job.location}</td>
+                                    <td class="p-3">${job.status}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Отображение публичных часто задаваемых вопросов
+        function renderPublicFaq() {
+            const content = document.getElementById('public-faq');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Часто задаваемые вопросы (FAQ)</h2>
+                <div class="overflow-x-auto" style="max-height: 400px; overflow-y: auto;">
+                    <table class="w-full text-left text-gray-300 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-600">
+                            <tr>
+                                <th class="p-3">Вопрос</th>
+                                <th class="p-3">Ответ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${publicFaqData.map(faq => `
+                                <tr>
+                                    <td class="p-3">${faq.question}</td>
+                                    <td class="p-3">${faq.answer}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Отображение публичных контактов
+        function renderPublicContacts() {
+            const content = document.getElementById('public-contacts');
+            content.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4 text-white">Контактная информация компании</h2>
+                <p class="text-gray-300 mb-2 font-semibold">Основные контакты:</p>
+                <p class="text-lg mb-2"><strong class="text-gray-300">Главный офис:</strong> ул. Примерная, д. 10, Город N</p>
+                <p class="text-lg mb-2"><strong class="text-gray-300">Телефон:</strong> +1 (800) 123-4567</p>
+                <p class="text-lg mb-4"><strong class="text-gray-300">Email:</strong> info@company.com</p>
+                <p class="text-gray-300 mb-2 font-semibold">Служба поддержки:</p>
+                <p class="text-lg mb-2"><strong class="text-gray-300">Email:</strong> support@company.com</p>
+                <p class="text-lg mb-2"><strong class="text-gray-300">Телефон:</strong> +1 (800) 987-6543</p>
+                <p class="text-lg"><strong class="text-gray-300">Часы работы:</strong> Пн-Пт, 9:00 - 18:00</p>
+            `;
+        }
+
+        // Настройка вкладок
+        function setupTabs(buttonsContainerId, contentContainerId) {
+            const buttonsContainer = document.getElementById(buttonsContainerId);
+            const contentContainer = document.getElementById(contentContainerId);
+
+            // Клонирование и замена кнопок для удаления предыдущих слушателей событий
+            buttonsContainer.querySelectorAll('.tab-button').forEach(button => {
+                const oldButton = button.cloneNode(true);
+                button.parentNode.replaceChild(oldButton, button);
+            });
+
+            // Добавление новых слушателей событий
+            document.getElementById(buttonsContainerId).querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.getAttribute('data-tab');
+
+                    // Удалить активный класс у всех кнопок и скрыть весь контент вкладок
+                    document.getElementById(buttonsContainerId).querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                    document.getElementById(contentContainerId).querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+                    // Добавить активный класс к текущей кнопке и показать соответствующий контент
+                    button.classList.add('active');
+                    document.getElementById(tabId).classList.remove('hidden');
+                });
+            });
+        }
+
+        // Инициализация при загрузке документа
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initializeTestData();
+            showPage('login');
+        });
+    </script>
+</body>
+</html>
